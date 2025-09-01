@@ -1,0 +1,2 @@
+1 | Felipe  | Felipe  | Felipe  | ADMIN
+2 | Felipe | Brana | AAAA | GENERAL
