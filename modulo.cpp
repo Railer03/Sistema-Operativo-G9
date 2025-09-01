@@ -18,6 +18,12 @@ vector<Usuario> usuarios;
 int next_id = 1;
 string user_file;
 
+string trim(const string& s) {
+    size_t start = s.find_first_not_of(" \t\r\n");
+    size_t end = s.find_last_not_of(" \t\r\n");
+    return (start == string::npos) ? "" : s.substr(start, end - start + 1);
+}
+
 void cargar_env() {
     ifstream env(".env");
     if (!env.is_open()) { 
@@ -30,6 +36,7 @@ void cargar_env() {
     if (pos != string::npos) {
         size_t end = contenido.find('\n', pos);
         user_file = contenido.substr(pos + 10, end - pos - 10);
+        user_file = trim(user_file); // Elimina espacios y saltos de línea
     }
 }
 
@@ -120,7 +127,7 @@ void listar_usuarios() {
             cout << u.id << " | " << u.nombre << " | " << u.username << " | " << u.password << " | " << u.perfil << "\n";
         }
     }
-    cout << "\n1) Volver\n";
+    cout << "\n1) Volver\n Opción: \n";
     int op; 
     while (!(cin >> op) || op != 1) { 
     cin.clear();
