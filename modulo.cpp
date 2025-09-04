@@ -24,7 +24,7 @@ string trim(const string& s) {
     return (start == string::npos) ? "" : s.substr(start, end - start + 1);
 }
 
-void cargar_env() {
+void cargar_env() {     //carga el archivo .env
     ifstream env(".env");
     if (!env.is_open()) { 
         cout << "ERROR: No se encontró el archivo .env.\n"; 
@@ -40,7 +40,7 @@ void cargar_env() {
     }
 }
 
-void cargar_usuarios() {
+void cargar_usuarios() {        //lee el archivo usuarios.txt y los pasa al vector usuarios
     usuarios.clear();
     ifstream f(user_file);
     string linea;
@@ -64,7 +64,7 @@ void cargar_usuarios() {
 }
 
 
-void guardar_usuarios() {
+void guardar_usuarios() {       //guarda los cambios hechos en agregar_usuarios al archivo .txt
     ofstream f(user_file);
     for (size_t i = 0; i < usuarios.size(); i++) {
         const Usuario& u = usuarios[i];
@@ -72,7 +72,7 @@ void guardar_usuarios() {
     }
 }
 
-void mostrar_menu() {
+void mostrar_menu() {       //imprime las opciones al usuario
     cout << "\n--- MENU USUARIOS ---\n";
     cout << "1) Agregar usuario\n";
     cout << "2) Listar usuarios\n";
@@ -85,14 +85,14 @@ const char PERFIL_ADMIN[] = "ADMIN";
 const char PERFIL_GENERAL[] = "GENERAL";
 
 void agregar_usuario() {
-    Usuario u;
+    Usuario u;      //se crea una instancia del struct, la cual se llenan los datos para luego ser agreagda a usuarios
     u.id = next_id++;
     cout << "Nombre: "; cin >> ws; cin.getline(u.nombre, 20);
     cout << "Username: "; cin.getline(u.username, 20);
     cout << "Password: "; cin.getline(u.password, 20);
 
     while (true) {
-        cout << "Perfil (ADMIN o GENERAL): ";
+        cout << "Perfil (ADMIN o GENERAL): ";   //confirma si el usuario pertenece a admin o general
         cin.getline(u.perfil, 8);
         if (strcmp(u.perfil, PERFIL_ADMIN) == 0 || strcmp(u.perfil, PERFIL_GENERAL) == 0) {
             break;
@@ -107,7 +107,7 @@ void agregar_usuario() {
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
     }
     cin.ignore();
-    if (op == 1) {
+    if (op == 1) {      //guarda los usuarios a el vector de struct y al .txt
         usuarios.push_back(u);
         guardar_usuarios();
         cout << "Usuario agregado con ID " << u.id << ".\n";
@@ -141,7 +141,7 @@ void eliminar_usuario() {
     int id;
     cin >> id; cin.ignore();
     size_t i;
-    for (i = 0; i < usuarios.size(); i++) {
+    for (i = 0; i < usuarios.size(); i++) {     //busca el usuario a eliminar por la ID ingresada
         if (usuarios[i].id == id) break;
     }
 
@@ -158,7 +158,7 @@ void eliminar_usuario() {
     }
     cin.ignore();
     if (op == 1) {
-        usuarios.erase(usuarios.begin() + i);
+        usuarios.erase(usuarios.begin() + i);       //elimina al usuario de el vector, y guarda los cambios
         guardar_usuarios();
         cout << "Usuario eliminado.\n";
     } else {
@@ -172,7 +172,7 @@ int main() {
     while (true) {
         mostrar_menu();
         int op;
-        cin >> op; cin.ignore();
+        cin >> op; cin.ignore();            //recive la opcion escojida por el usuario
         if (op == 0) break;
         if (op == 1) agregar_usuario();
         else if (op == 2) listar_usuarios();
