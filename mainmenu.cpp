@@ -30,7 +30,7 @@ string trim(const string& s) {
     return (start == string::npos) ? "" : s.substr(start, end - start + 1);
 }
 
-void cargar_env() {
+void cargar_env() {     //carga el archivo .env
     ifstream env(".env");
     if (!env.is_open()) { 
         cout << "ERROR: No se encontró el archivo .env.\n"; 
@@ -50,7 +50,7 @@ void cargar_env() {
     }
 }
 
-void cargar_usuarios() {
+void cargar_usuarios() {        //carga el archivo con los datos de los usuarios
     usuarios.clear();
     ifstream f(user_file);
     string linea;
@@ -99,7 +99,7 @@ void cargar_perfiles(const string& perfil_file) {
     }
 }
 
-void mostrar_menu_perfil(const string& perfil) {
+void mostrar_menu_perfil(const string& perfil) {    //despliega las opciones para el usuario
     vector<string> menu = {
         "Salir",                // 0
         "Admin usuario",        // 1
@@ -160,15 +160,15 @@ void endesarrollo(){
     cout<<"En desarrollo.\n";
 }
 
-bool es_palindromo(const string &s) {
+bool es_palindromo(const string &s) {   //funcion para checkear si un string es palindromo
     string tmp;
     for (char c : s) if (isalnum((unsigned char)c)) tmp.push_back(tolower((unsigned char)c));
     int i=0, j=(int)tmp.size()-1;
-    while (i<j) { if (tmp[i]!=tmp[j]) return false; ++i; --j; }
+    while (i<j) { if (tmp[i]!=tmp[j]) return false; ++i; --j; }     //recorre ambos lados de un string  para confirmar si es palindromo o no
     return true;
 }
 
-void ui_palindromo() {
+void ui_palindromo() {  //texto en pantalla para el usuario a la hora de checkear palindromos
     while (true) {
         cout << "\n--- PALINDROMO ---\n1) Validar (ingresar texto)\n2) Cancelar\nElija una opción: ";
         int o;
@@ -185,14 +185,14 @@ void ui_palindromo() {
     }
 }
 
-void fx() {
+void fx() {     //funcion matematica, calcula el valor de x*x + 2*x + 8
     while (true) {
         cout << "\n--- CALCULAR f(x) = x*x + 2*x + 8 ---\n";
         cout << "Ingrese X (o 'V' para VOLVER): ";
         string inp; getline(cin, inp);
         string t = trim(inp);
-        if (t == "v" || t == "V") return;
-        try {
+        if (t == "v" || t == "V") return;   //salir de la funcion
+        try {       //intenta operar la funcion f(x), si la entrada no es valida, presenta un mensaje de error
             double x = stod(t);
             double fx = x*x + 2.0*x + 8.0;
             cout << "f(" << x << ") = " << x << "*" << x << " + 2*" << x << " + 8 = " << fx << "\n";
@@ -204,7 +204,7 @@ void fx() {
 
 int main(int argc, char* argv[]) {
     cargar_env();
-    cargar_usuarios();
+    cargar_usuarios();  
 
     if (!iniciar_sesion(argc, argv)) return 1;
     cargar_perfiles(perfil_file);
@@ -216,7 +216,7 @@ int main(int argc, char* argv[]) {
             cout << "Opción inválida para su perfil.\n";
             continue;
         }
-        switch (op) {
+        switch (op) {   
             case 0:
                 cout << "Saliendo...\n"; 
                 return 0;
