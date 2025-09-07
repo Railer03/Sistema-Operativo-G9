@@ -106,8 +106,8 @@ void mostrar_menu_perfil(const string& perfil) {    //despliega las opciones par
         "Multiplicador Matrices NxN",      // 2
         "Juego",                // 3
         "Es palindromo?",       // 4
-        "Calcular F(x)",        // 5
-        "Conteo vocales"        // 6
+        "Calcular F(x) = x^2+2x+8",        // 5
+        "Conteo sobre texto"        // 6
     };
     cout << "\n--- MENU " << perfil << " ---\n";
     for (int op : opciones_perfil[perfil]) {
@@ -131,6 +131,15 @@ bool iniciar_sesion(int argc, char* argv[]) {
         cerr << "Uso: " << argv[0] << " -u <usuario> -p <password> -f <archivo>\n";
         return false;
     }
+
+    ifstream archivo(archivoArg);
+    if (!archivo.is_open()) {
+        cerr << "ERROR: No se pudo abrir el archivo especificado: " << archivoArg << "\n";
+        return false;
+    }
+    archivo.close();
+
+    user_file = archivoArg; // Guardar el archivo en la variable global
 
     Usuario usuarioLogueado;
     bool valido = false;
@@ -202,6 +211,58 @@ void fx() {     //funcion matematica, calcula el valor de x*x + 2*x + 8
     }
 }
 
+void conteo_sobre_texto() {
+    ifstream archivo(user_file); // Usar la variable global user_file
+    if (!archivo.is_open()) {
+        cerr << "ERROR: No se pudo abrir el archivo: " << user_file << "\n";
+        return;
+    }
+
+    int vocales = 0, consonantes = 0, especiales = 0, palabras = 0;
+    bool enPalabra = false;
+    string linea;
+
+    cout << "Procesando archivo: " << user_file << "\n";
+
+    while (getline(archivo, linea)) {
+        for (char c : linea) {
+            if (isalpha(c)) {
+                c = tolower(c);
+                if (c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u')
+                    vocales++;
+                else
+                    consonantes++;
+                enPalabra = true;
+            } else if (isspace(c)) {
+                if (enPalabra) {
+                    palabras++;
+                    enPalabra = false;
+                }
+            } else {
+                especiales++;
+                if (enPalabra) {
+                    palabras++;
+                    enPalabra = false;
+                }
+            }
+        }
+        if (enPalabra) {
+            palabras++;
+            enPalabra = false;
+        }
+    }
+
+    cout << "\nConteo\n";
+    cout << "Vocales: " << vocales << "\n";
+    cout << "Consonantes: " << consonantes << "\n";
+    cout << "Caracteres especiales: " << especiales << "\n";
+    cout << "Palabras: " << palabras << "\n";
+    cout << "Presione ENTER para continuar...";
+    cin.get();
+}
+
+
+
 int main(int argc, char* argv[]) {
     cargar_env();
     cargar_usuarios();  
@@ -236,7 +297,8 @@ int main(int argc, char* argv[]) {
                 fx(); 
                 break;
             case 6:
-                cout << "Función para opción 6.\n"; break;
+                conteo_sobre_texto();
+                break;
             default:
                 cout << "Opción no implementada.\n"; break;
         }
