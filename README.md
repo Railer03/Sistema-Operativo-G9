@@ -34,6 +34,9 @@ Para el programa de multiplicación de matrices:
 En el .env se guardan las siguientes:
 
 USER_FILE: indica el archivo donde se guarda la información principal de usuarios (ID, nombre, username, contraseña, tipo de perfil)
+
 PERFIL_FILE: indica el archivo donde se limitan las opciones para distintos perfil de usuarios en el menu
+
 MATRIZ_A: indica el archivo  donde se guarda la primera matriz de la multiplicación de matrices
+
 MATRIZ_B: indica el archivo  donde se guarda la segunda matriz de la multiplicación de matrices
