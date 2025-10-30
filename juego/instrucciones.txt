@@ -1,0 +1,18 @@
+INSTRUCCIONES PARA JUGAR PONG
+
+Controles:
+- Usa la tecla W para subir la paleta izquierda.
+- Usa la tecla S para bajar la paleta izquierda.
+- La paleta derecha es controlada por la computadora.
+
+Reglas del juego:
+- El objetivo es evitar que la pelota pase tu paleta (lado izquierdo) y hacer que rebote contra tu paleta o los bordes superior/inferior.
+- Si la pelota pasa tu paleta, la computadora gana un punto.
+- Si la pelota pasa la paleta de la computadora (lado derecho), tú ganas un punto.
+- El primer jugador en llegar a 10 puntos gana la partida.
+- El puntaje actual se muestra en pantalla.
+
+Consejos:
+- Anticipa la trayectoria de la pelota y posiciona tu paleta usando W y S.
+- La velocidad y el ángulo de rebote pueden cambiar según el punto de impacto en la paleta.
+- Mantente atento y reacciona rápido para evitar perder puntos.
