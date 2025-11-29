@@ -1,55 +1,71 @@
-1) Propósito de la aplicación
+# Sistema operativo por grupo 9
+
+### 1) Propósito de la aplicación
 
 El proyecto en C++ consiste en la construcción de un sistema, cuyo objetivo es gestionar la interacción con distintos perfiles de usuario y ofrecer un conjunto de funcionalidades accesibles desde un menú en consola.
 
-Actualmente el proyecto permite:
+El proyecto permite:
 
--Agregar, listar y eliminar usuarios con ID, nombre, username, contraseña y perfil (ADMIN o GENERAL).
+- Agregar, listar y eliminar usuarios con ID, nombre, username, contraseña y perfil (ADMIN o GENERAL).
 
--Acceder a un menú con siete opciones: administración de usuarios y perfiles (solo accesible para ADMIN), multiplicación de matrices NxN, un juego, verificación de palíndromos, cálculo de la función f(x)=x^2 + 2x + 8, conteo sobre texto (vocales, consonantes, caracteres especiales y palabras) y salir del sistema. De las cuales las primeras tres están en desarrollo.
+- Acceder a un menú con nueve opciones:
+   - Administración de usuarios y perfiles (solo accesible para ADMIN).
+   - Multiplicación de matrices NxN.
+   - Un juego y su test de rendimiento.
+   - Verificación de palíndromos.
+   - Cálculo de la función $f(x)=x^2 + 2x + 8$.
+   - Conteo sobre texto (vocales, consonantes, caracteres especiales y palabras).
+   - Buscador de palabras especificas en archivos de texto y salir del sistema.
+  
 
--Multiplicar matrices NxN a partir de archivos de texto.
+### 2) Cómo ejecutar el programa
 
-2) Cómo se debe ejecutar
-   
-Abrir una terminal
-Clonar el repositorio
-Entrar en la carpeta del proyecto
-Compilar el proyecto usando make, que genera los ejecutables menu, modulo y matriz
+- Descargar/Clonar el repositorio usando el siguiente comando en una terminal:
+   ```
+   git clone https://github.com/Railer03/Sistema-Operativo-G9.git
+   ```
+- Abrir una consola dentro de la carpeta principal del proyecto
+  
+- Ejecutar el comando
+  ```
+  make
+  ```
 
-Ejecutar el programa de administración de perfiles:
+- Para ejecutar el programa de administración de perfiles, usar el comando:
+   ```
+   ./modulo
+   ```
+- Para ejecutar el programa principal, usar el comando:
+   ```
+   ./menu -u usuario -p password -f ".env"
+   ```
+- Para ejecutar el programa de multiplicación de matrices, usar el comando:
+   ```
+   ./matriz
+   ```
 
-./modulo
-
-Ejecutar el programa principal con:
-
-./menu -u usuario -p password -f ".env"
-
-Para el programa de multiplicación de matrices:
-
-./matriz
-
-
-3) Descripción de las variables de entorno
+### 3) Descripción de las variables de entorno
 
 En el archivo .env se guardan las siguientes variables:
 
-USER_FILE: archivo con la información principal de usuarios (ID, nombre, username, contraseña, tipo de perfil)
-PERFIL_FILE: archivo con las opciones permitidas para cada perfil de usuario
-ADMIN_SYS: ejecutable para la administración de usuarios y perfiles
-MUTLI_M: ejecutable para la multiplicación de matrices
-GAME: ejecutable del juego pong
-CREATE_INDEX: ejecutable para crear el índice invertido
-PATH_IDX: carpeta donde se guardan los archivos de índices
-LOG_FILE: carpeta donde se guardan los logs
-INDICE-INVET-PARALELO: ejecutable para crear el índice invertido paralelo
+- USER_FILE: archivo con la información principal de usuarios (ID, nombre, username, contraseña, tipo de perfil)
+- PERFIL_FILE: archivo con las opciones permitidas para cada perfil de usuario
+- ADMIN_SYS: ejecutable para la administración de usuarios y perfiles
+- MUTLI_M: ejecutable para la multiplicación de matrices
+- GAME: ejecutable del juego pong
+- GAME_SPEED: Constante de velocidad
+- GAME_ACCELERATION: Proporcion de aumento de la velocidad
+- CREATE_INDEX: ejecutable para crear el índice invertido
+- PATH_IDX: carpeta donde se guardan los archivos de índices
+- LOG_FILE: carpeta donde se guardan los logs
+- INDICE-INVET-PARALELO: ejecutable para crear el índice invertido paralelo
 
-4) Paralelización en createindexparalelo
+### 4) Paralelización en createindexparalelo
 
 La paralelización en createindexparalelo se realiza utilizando hilos (threads) en C++. El proceso divide el trabajo de indexar los libros en lotes, y cada hilo procesa un lote de archivos en paralelo. Esto permite aprovechar los núcleos del procesador y acelerar la creación del índice invertido, especialmente cuando hay muchos archivos de texto en la carpeta de libros. El usuario puede configurar el número de hilos (N_THREADS) y el tamaño de cada lote (N_LOTE) al ejecutar la opción correspondiente en el menú.
 
 
-5) Juego Pong
+### 5) Juego Pong
 
 El juego pong se ejecuta desde el menú principal (opción 3).
 
