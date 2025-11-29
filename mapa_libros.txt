@@ -1,49 +1,49 @@
-1;A Room with a View by E. M. Forster.txt
-2;A Study in Scarlet by Arthur Conan Doyle.txt
-3;A Tale of Two Cities by Charles Dickens.txt
-4;Anarchism and Other Essays by Emma Goldman.txt
-5;Andrew Marvell by Augustine Birrell.txt
-6;Books in Medicine (sorted by popularity).txt
-7;Carmilla by Joseph Sheridan Le Fanu.txt
-8;Crime and Punishment by Fyodor Dostoyevsky.txt
-9;Doctrina Christiana by Edwin Wolf.txt
-10;Don Quijote by Miguel de Cervantes Saavedra.txt
-11;Dracula by Bram Stoker.txt
-12;Eugene Field, a Study in Heredity and Contradictions — Volume 2 by Slason Thompson.txt
-13;Flatland A Romance of Many Dimensions by Edwin Abbott Abbott.txt
-14;Frankenstein; Or, The Modern Prometheus by Mary Wollstonecraft Shelley.txt
-15;From the Caves and Jungles of Hindostan by H. P. Blavatsky.txt
-16;Ghost Stories of an Antiquary by M. R. James.txt
-17;Heath's Modern Language Series The Spanish American Reader by Ernesto Nelson.txt
-18;History of Julius Cæsar, Vol. 1 of 2 by Emperor of the French Napoleon III.txt
-19;History of Julius Cæsar, Vol. 2 of 2 by Emperor of the French Napoleon III.txt
-20;Leyte The Return to the Philippines by M. Hamlin Cannon.txt
-21;Little Women by Louisa May Alcott.txt
-22;Little Women; Or, Meg, Jo, Beth, and Amy by Louisa May Alcott.txt
-23;Metamorphosis.txt
+1;From the Caves and Jungles of Hindostan by H. P. Blavatsky.txt
+2;The Galaxy, May, 1877 by Various.txt
+3;The Moonstone by Wilkie Collins.txt
+4;The Complete Works of William Shakespeare by William Shakespeare.txt
+5;Metamorphosis.txt
+6;The Works of Edgar Allan Poe — Volume 4 by Edgar Allan Poe.txt
+7;A Study in Scarlet by Arthur Conan Doyle.txt
+8;History of Julius Cæsar, Vol. 2 of 2 by Emperor of the French Napoleon III.txt
+9;The Evolution of Modern Medicine by Sir William Osler.txt
+10;The Wars of Religion in France 1559-1576 by James Westfall Thompson.txt
+11;Society in America, Volume 2 (of 2) by Harriet Martineau.txt
+12;The divine comedy by Dante Alighieri.txt
+13;Little Women by Louisa May Alcott.txt
+14;Dracula by Bram Stoker.txt
+15;Carmilla by Joseph Sheridan Le Fanu.txt
+16;The System of Nature, or, the Laws of the Moral and Physical World. Volume 2.txt
+17;A Tale of Two Cities by Charles Dickens.txt
+18;Trial of the Major War Criminals Before the International Military Tribunal,….txt
+19;Romeo and Juliet by William Shakespeare.txt
+20;Our Vanishing Wild Life Its Extermination and Preservation by William T. Hornaday.txt
+21;Twenty-Five Ghost Stories by W. Bob Holland.txt
+22;Doctrina Christiana by Edwin Wolf.txt
+23;A Room with a View by E. M. Forster.txt
 24;Middlemarch by George Eliot.txt
-25;Moby Dick; Or, The Whale by Herman Melville.txt
-26;Our Vanishing Wild Life Its Extermination and Preservation by William T. Hornaday.txt
-27;Pride and Prejudice by Jane Austen.txt
-28;Queen Victoria by Lytton Strachey.txt
-29;Recollections of the Private Life of Napoleon — Complete by Louis Constant Wairy.txt
-30;Romeo and Juliet by William Shakespeare.txt
-31;Society in America, Volume 2 (of 2) by Harriet Martineau.txt
-32;Superstition in all ages by baron d' Paul Henri Thiry Holbach.txt
-33;The Adventures of Sherlock Holmes by Arthur Conan Doyle.txt
-34;The Beautiful Necessity by Claude Fayette Bragdon.txt
-35;The Complete Works of William Shakespeare by William Shakespeare.txt
-36;The divine comedy by Dante Alighieri.txt
-37;The Evolution of Modern Medicine by Sir William Osler.txt
-38;The Galaxy, May, 1877 by Various.txt
-39;The Hand in the Dark by Arthur J. Rees.txt
-40;The Life of Napoleon I (Complete) by J. Holland Rose.txt
-41;The Logic of Chance, 3rd edition by John Venn.txt
-42;The Man in the Brown Suit by Agatha Christie.txt
-43;The Moonstone by Wilkie Collins.txt
-44;The Return of Sherlock Holmes by Arthur Conan Doyle.txt
-45;The System of Nature, or, the Laws of the Moral and Physical World. Volume 2.txt
-46;The Wars of Religion in France 1559-1576 by James Westfall Thompson.txt
-47;The Works of Edgar Allan Poe — Volume 4 by Edgar Allan Poe.txt
-48;Trial of the Major War Criminals Before the International Military Tribunal,….txt
-49;Twenty-Five Ghost Stories by W. Bob Holland.txt
+25;Anarchism and Other Essays by Emma Goldman.txt
+26;Leyte The Return to the Philippines by M. Hamlin Cannon.txt
+27;The Return of Sherlock Holmes by Arthur Conan Doyle.txt
+28;Pride and Prejudice by Jane Austen.txt
+29;Andrew Marvell by Augustine Birrell.txt
+30;The Life of Napoleon I (Complete) by J. Holland Rose.txt
+31;Recollections of the Private Life of Napoleon — Complete by Louis Constant Wairy.txt
+32;The Man in the Brown Suit by Agatha Christie.txt
+33;Books in Medicine (sorted by popularity).txt
+34;Eugene Field, a Study in Heredity and Contradictions — Volume 2 by Slason Thompson.txt
+35;Superstition in all ages by baron d' Paul Henri Thiry Holbach.txt
+36;The Hand in the Dark by Arthur J. Rees.txt
+37;The Beautiful Necessity by Claude Fayette Bragdon.txt
+38;Don Quijote by Miguel de Cervantes Saavedra.txt
+39;Ghost Stories of an Antiquary by M. R. James.txt
+40;Queen Victoria by Lytton Strachey.txt
+41;Flatland A Romance of Many Dimensions by Edwin Abbott Abbott.txt
+42;Crime and Punishment by Fyodor Dostoyevsky.txt
+43;History of Julius Cæsar, Vol. 1 of 2 by Emperor of the French Napoleon III.txt
+44;The Adventures of Sherlock Holmes by Arthur Conan Doyle.txt
+45;The Logic of Chance, 3rd edition by John Venn.txt
+46;Moby Dick; Or, The Whale by Herman Melville.txt
+47;Little Women; Or, Meg, Jo, Beth, and Amy by Louisa May Alcott.txt
+48;Frankenstein; Or, The Modern Prometheus by Mary Wollstonecraft Shelley.txt
+49;Heath's Modern Language Series The Spanish American Reader by Ernesto Nelson.txt

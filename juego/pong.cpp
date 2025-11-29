@@ -38,6 +38,232 @@
 
 #include <cstdlib>
 #include <ctime>
+#include <iomanip>
+#include <sys/stat.h>
+
+// Constante necesaria para el sistema de logging (definida aquí para orden de declaración)
+const int STATS_MAX_PLAYERS = 4;
+
+// ============== SISTEMA DE LOGGING PARA ESTADÍSTICAS ==============
+// Genera UN SOLO archivo de log con todas las estadísticas:
+// Cada línea tiene: event_type,timestamp,epoch_sec,match_id,data...
+// event_type: GOAL, MATCH, COLLISION, SPEED
+
+std::string g_logDir = "logs/juego/";  // Directorio de logs (subcarpeta juego)
+std::string g_graficoDir = "graficos/Juego/";  // Directorio de gráficos
+std::ofstream g_statsLog;                 // Archivo único de estadísticas
+std::string g_currentLogFile;             // Path del log actual
+std::mutex g_logMutex;                    // Mutex para escritura thread-safe
+
+int g_matchId = 0;                  // ID del partido actual
+std::chrono::steady_clock::time_point g_matchStartTime;
+std::chrono::steady_clock::time_point g_lastGoalTime;  // Tiempo del último gol (para calcular duración)
+int g_collisionCount[2][STATS_MAX_PLAYERS] = {{0}}; // Colisiones por equipo/slot
+std::chrono::steady_clock::time_point g_lastSpeedSample;
+
+// Obtener timestamp legible
+std::string get_timestamp() {
+    auto now = std::chrono::system_clock::now();
+    auto time = std::chrono::system_clock::to_time_t(now);
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+        now.time_since_epoch()) % 1000;
+    std::stringstream ss;
+    ss << std::put_time(std::localtime(&time), "%Y-%m-%d %H:%M:%S");
+    ss << "." << std::setfill('0') << std::setw(3) << ms.count();
+    return ss.str();
+}
+
+// Obtener tiempo en segundos desde epoch (para gráficos)
+long long get_epoch_seconds() {
+    return std::chrono::duration_cast<std::chrono::seconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count();
+}
+
+// Obtener timestamp para nombres de carpeta (formato: HHMMSS_DDMMAAAA)
+std::string get_folder_timestamp() {
+    auto now = std::chrono::system_clock::now();
+    auto time = std::chrono::system_clock::to_time_t(now);
+    std::stringstream ss;
+    ss << std::put_time(std::localtime(&time), "%H%M%S_%d%m%Y");
+    return ss.str();
+}
+
+// Inicializar archivo de log único
+void init_stats_logs() {
+    // Crear directorios si no existen (sin ../ porque se ejecuta desde raíz)
+    mkdir("logs", 0755);
+    mkdir(g_logDir.c_str(), 0755);
+    mkdir("graficos", 0755);
+    mkdir(g_graficoDir.c_str(), 0755);
+    mkdir((g_graficoDir + "latest").c_str(), 0755);
+    mkdir((g_graficoDir + "all").c_str(), 0755);
+    
+    std::cout << "[STATS] Sistema de logs inicializado" << std::endl;
+}
+
+// Cerrar logs
+void close_stats_logs() {
+    std::lock_guard<std::mutex> lk(g_logMutex);
+    if (g_statsLog.is_open()) g_statsLog.close();
+}
+
+// Registrar un gol
+// Formato: GOAL,timestamp,epoch_sec,match_id,team,team_name,goal_number,time_since_last_goal,match_time
+void log_goal(int team, int points, int totalScore) {
+    std::lock_guard<std::mutex> lk(g_logMutex);
+    if (!g_statsLog.is_open()) return;
+    
+    auto now = std::chrono::steady_clock::now();
+    float timeSinceLastGoal = std::chrono::duration<float>(now - g_lastGoalTime).count();
+    float matchTime = std::chrono::duration<float>(now - g_matchStartTime).count();
+    g_lastGoalTime = now;  // Actualizar tiempo del último gol
+    
+    std::string teamName = (team == 0) ? "Red" : "Blue";
+    int goalNumber = totalScore;  // El número de gol es el score actual del equipo
+    
+    g_statsLog << "GOAL," << get_timestamp() << "," << get_epoch_seconds() << ","
+               << g_matchId << "," << team << "," << teamName << ","
+               << goalNumber << "," << std::fixed << std::setprecision(2) 
+               << timeSinceLastGoal << "," << matchTime << "," << std::endl;
+    g_statsLog.flush();
+}
+
+// Registrar inicio de partido
+void log_match_start() {
+    g_matchId++;
+    g_matchStartTime = std::chrono::steady_clock::now();
+    g_lastGoalTime = g_matchStartTime;  // Inicializar tiempo del último gol
+    // Reiniciar contadores de colisiones
+    for (int t = 0; t < 2; t++)
+        for (int s = 0; s < STATS_MAX_PLAYERS; s++)
+            g_collisionCount[t][s] = 0;
+    
+    // Cerrar log anterior si existe
+    std::lock_guard<std::mutex> lk(g_logMutex);
+    if (g_statsLog.is_open()) g_statsLog.close();
+    
+    // Crear nombre único con timestamp para este partido
+    std::string timestamp = get_folder_timestamp();
+    g_currentLogFile = g_logDir + "pong_" + timestamp + ".log";
+    g_statsLog.open(g_currentLogFile, std::ios::trunc);
+    
+    if (g_statsLog.is_open()) {
+        g_statsLog << "event_type,timestamp,epoch_sec,match_id,data1,data2,data3,data4,data5,data6" << std::endl;
+        g_statsLog.flush();
+    }
+    
+    std::cout << "[STATS] Partido #" << g_matchId << " iniciado - Log: " << g_currentLogFile << std::endl;
+}
+
+// Registrar fin de partido
+// Formato: MATCH,timestamp,epoch_sec,match_id,winner_team,winner_name,duration_sec,score_red,score_blue
+void log_match_end(int winnerTeam, int scoreRed, int scoreBlue) {
+    std::string logFilePath;
+    {
+        std::lock_guard<std::mutex> lk(g_logMutex);
+        if (!g_statsLog.is_open()) return;
+        
+        auto now = std::chrono::steady_clock::now();
+        float duration = std::chrono::duration<float>(now - g_matchStartTime).count();
+        std::string winnerName = (winnerTeam == 0) ? "Red" : "Blue";
+        
+        g_statsLog << "MATCH," << get_timestamp() << "," << get_epoch_seconds() << ","
+                   << g_matchId << "," << winnerTeam << "," << winnerName << ","
+                   << std::fixed << std::setprecision(2) << duration << ","
+                   << scoreRed << "," << scoreBlue << "," << std::endl;
+        g_statsLog.flush();
+        
+        // También guardar colisiones acumuladas del partido
+        for (int t = 0; t < 2; t++) {
+            std::string tName = (t == 0) ? "Red" : "Blue";
+            for (int s = 0; s < STATS_MAX_PLAYERS; s++) {
+                if (g_collisionCount[t][s] > 0) {
+                    g_statsLog << "COLLISION," << get_timestamp() << "," << get_epoch_seconds() << ","
+                               << g_matchId << "," << t << "," << tName << ","
+                               << s << "," << g_collisionCount[t][s] << ",," << std::endl;
+                }
+            }
+        }
+        g_statsLog.flush();
+        
+        std::cout << "[STATS] Partido #" << g_matchId << " finalizado. Duración: " 
+                  << duration << "s. Ganador: " << winnerName << std::endl;
+        
+        // Guardar path del log para usarlo fuera del lock
+        logFilePath = g_currentLogFile;
+    }
+    
+    // GENERAR GRÁFICOS (fuera del mutex)
+    std::cout << "[STATS] Generando gráficos..." << std::endl;
+    
+    // Mover archivos antiguos de latest a all si existen
+    std::string latestDir = g_graficoDir + "latest/";
+    std::string allDir = g_graficoDir + "all/";
+    
+    // Verificar si hay contenido en latest
+    std::string checkCmd = "[ -n \"$(ls -A " + latestDir + " 2>/dev/null)\" ] && echo 'yes' || echo 'no'";
+    FILE* pipe = popen(checkCmd.c_str(), "r");
+    char buffer[128];
+    std::string result = "";
+    if (pipe) {
+        if (fgets(buffer, sizeof(buffer), pipe)) result = buffer;
+        pclose(pipe);
+    }
+    
+    // Si latest no está vacío, mover contenido a all
+    if (result.find("yes") != std::string::npos) {
+        std::string timestamp = get_folder_timestamp();
+        std::string destDir = allDir + timestamp + "/";
+        std::string mvCmd = "mkdir -p " + destDir + " && mv " + latestDir + "* " + destDir + " 2>/dev/null";
+        if (system(mvCmd.c_str()) == -1) {
+            std::cerr << "Error moving files to all directory\n";
+        }
+    }
+    
+    // Crear carpeta en latest con timestamp actual
+    std::string sessionDir = latestDir + get_folder_timestamp() + "/";
+    std::string mkdirCmd = "mkdir -p " + sessionDir;
+    if (system(mkdirCmd.c_str()) == -1) {
+        std::cerr << "Error creating session directory\n";
+    }
+    
+    // Llamar a generate_stats.py (buscar en directorio juego/)
+    std::string scriptPath = "juego/generate_stats.py";
+    // Si no existe, intentar con ruta relativa desde juego/
+    std::ifstream test(scriptPath);
+    if (!test.good()) {
+        scriptPath = "generate_stats.py";  // Estamos en juego/
+    }
+    test.close();
+    
+    std::string pythonCmd = "python3 " + scriptPath + " \"" + logFilePath + "\" \"" + sessionDir + "\" 2>&1";
+    int result_py = system(pythonCmd.c_str());
+    
+    if (result_py == 0) {
+        std::cout << "[STATS] Gráficos generados en: " << sessionDir << std::endl;
+    } else {
+        std::cout << "[STATS] Error al generar gráficos (código: " << result_py << ")" << std::endl;
+    }
+}
+
+// Registrar colisión con paleta
+void log_collision(int team, int slot) {
+    g_collisionCount[team][slot]++;
+}
+
+// Registrar velocidad de la pelota (llamar periódicamente)
+// Formato: SPEED,timestamp,epoch_sec,match_id,speed,velocity_x,velocity_y
+void log_ball_speed(float vx, float vy) {
+    std::lock_guard<std::mutex> lk(g_logMutex);
+    if (!g_statsLog.is_open()) return;
+    float speed = std::sqrt(vx*vx + vy*vy);
+    g_statsLog << "SPEED," << get_timestamp() << "," << get_epoch_seconds() << ","
+               << g_matchId << "," << std::fixed << std::setprecision(2)
+               << speed << "," << vx << "," << vy << ",,," << std::endl;
+    g_statsLog.flush();
+}
+
+// ============== FIN SISTEMA DE LOGGING ==============
 
 // Attempt to read a simple .env file (KEY=VAL lines). Returns true if any values were loaded into the map.
 static bool load_env_file_into_map(const std::string &path, std::map<std::string,std::string> &out) {
@@ -159,6 +385,7 @@ struct ClientInfo {
     int slot; // slot index within team (0..runtimeMaxPlayersPerTeam-1)
     int inputDir; // -1 up, 1 down, 0 none
     std::string name;
+    bool isHost; // true si es el primer jugador (host)
 };
 
 // Server-side state
@@ -179,6 +406,7 @@ struct GameState {
 float initialBallSpeed = 250.0f; // default initial horizontal speed (pixels/sec)
 float initialVYRatio = 0.48f;    // ratio of vertical speed to horizontal speed for initial VY
 float accelerationFactor = 1.0f; // multiplier applied every accelIntervalSec
+float goalSpeedMultiplier = 1.0f; // multiplicador que aumenta con cada gol (se reinicia al terminar partido)
 std::chrono::steady_clock::time_point lastAccelerationTime;
 const std::chrono::seconds accelIntervalSec{10};
 
@@ -187,7 +415,8 @@ void reset_ball(int direction) {
     if (direction == 0) direction = (rand() % 2) ? 1 : -1;
     state.ballX = WIN_W / 2.0f;
     state.ballY = WIN_H / 2.0f;
-    float mag = initialBallSpeed;
+    // Aplicar multiplicador por goles a la velocidad inicial
+    float mag = initialBallSpeed * goalSpeedMultiplier;
     state.ballVX = (direction > 0) ? mag : -mag;
     // give VY a small randomized sign and magnitude relative to mag
     float vy = mag * initialVYRatio;
@@ -296,6 +525,9 @@ bool start_condition_met() {
 
 // Server loop handling connections and game simulation
 void run_server() {
+    // Inicializar sistema de estadísticas
+    init_stats_logs();
+    
     int listen_sock = socket(AF_INET, SOCK_STREAM, 0);
     int opt=1; setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
     sockaddr_in addr{};
@@ -438,17 +670,23 @@ void run_server() {
                 ci.slot = slot;
                 ci.inputDir = 0;
                 ci.name = "Player" + std::to_string(ci.id);
+                ci.isHost = (ci.id == 1); // El primer cliente (id=1) es el host
                 {
                     std::lock_guard<std::mutex> lk(clients_m);
                     clients[c] = ci;
                 }
                 std::stringstream ss; ss<<"INFO Connected as "<<ci.name<<" on team "<<ci.team<<" slot="<<ci.slot;
+                if (ci.isHost) ss << " [HOST]";
                 send_msg(c, ss.str());
                 // tell the client explicitly which team was assigned
                 std::stringstream as; as<<"ASSIGNED "<<ci.team;
                 send_msg(c, as.str());
                 broadcast(std::string("INFO Player joined: ") + ci.name + " team=" + std::to_string(ci.team));
-                std::cout << "Client "<<ci.id<<" connected on team "<<team<<" slot "<<slot<<"\n";
+                // Enviar señal para limpiar mensajes críticos en clientes
+                broadcast("CLEAR_CRITICAL");
+                std::cout << "Client "<<ci.id<<" connected on team "<<team<<" slot "<<slot;
+                if (ci.isHost) std::cout << " [HOST]";
+                std::cout << "\n";
             }
         }
 
@@ -484,8 +722,23 @@ void run_server() {
                 } else if (r==0) {
                     // client closed connection; record for removal and queue a leave message
                     std::string name = kv.second.name;
+                    bool wasHost = kv.second.isHost;
                     to_remove.push_back(sock);
-                    pending_msgs.push_back(std::string("INFO Player left: ") + name);
+                    
+                    if (wasHost) {
+                        // Host desconectado - interrumpir partida
+                        pending_msgs.push_back("INFO Host desconectado - partida interrumpida");
+                        state.running = false;
+                    } else {
+                        // Jugador normal desconectado
+                        if (state.running) {
+                            // Si la partida está corriendo, pausarla
+                            state.running = false;
+                            pending_msgs.push_back(std::string("INFO Jugador desconectado: ") + name + " - Partida pausada");
+                        } else {
+                            pending_msgs.push_back(std::string("INFO Player left: ") + name);
+                        }
+                    }
                 } else {
                     // r < 0; non-blocking maybe no data
                 }
@@ -510,6 +763,7 @@ void run_server() {
         if (!state.running && start_condition_met()) {
             state.running = true;
             broadcast("STATE START");
+            log_match_start();  // STATS: registrar inicio de partido
         }
 
         auto now = std::chrono::steady_clock::now();
@@ -552,9 +806,22 @@ void run_server() {
                                 // tweak velocity based on where it hit
                                 float rel = ((state.ballY - py) / state.paddleH) - 0.5f;
                                 state.ballVY += rel * 200.0f;
+                                
+                                // ACELERAR la pelota en cada rebote (5% más rápido)
+                                state.ballVX *= 1.05f;
+                                state.ballVY *= 1.05f;
+                                
+                                log_collision(t, s);  // STATS: registrar colisión
                             }
                         }
                     }
+                }
+                
+                // STATS: muestrear velocidad cada 2 segundos
+                auto nowSpeed = std::chrono::steady_clock::now();
+                if (nowSpeed - g_lastSpeedSample >= std::chrono::seconds(2)) {
+                    log_ball_speed(state.ballVX, state.ballVY);
+                    g_lastSpeedSample = nowSpeed;
                 }
                 // scoring: ball beyond left or right
                 if (state.ballX < 0) {
@@ -565,8 +832,11 @@ void run_server() {
                     // In 2v2 mode points are 1 per goal; otherwise award at least 1 (or number of players)
                     int pointsAward = (runtimeMaxPlayersPerTeam >= 2) ? 1 : std::max(1, playersOnTeam);
                     state.scores[scoringTeam] += pointsAward;
+                    log_goal(scoringTeam, pointsAward, state.scores[scoringTeam]);  // STATS: registrar gol
                     std::stringstream ss; ss<<"SCORE Team "<<scoringTeam<<" scored "<<pointsAward<<" pts. Tot="<<state.scores[scoringTeam];
                     broadcast(ss.str());
+                    // Incrementar velocidad levemente por cada gol (3%)
+                    goalSpeedMultiplier *= 1.03f;
                     // reset ball to the right
                     reset_ball(1);
                 } else if (state.ballX > WIN_W) {
@@ -575,8 +845,11 @@ void run_server() {
                     { std::lock_guard<std::mutex> lk(clients_m); for (auto &kv: clients) if (kv.second.team==scoringTeam) playersOnTeam++; }
                     int pointsAward = (runtimeMaxPlayersPerTeam >= 2) ? 1 : std::max(1, playersOnTeam);
                     state.scores[scoringTeam] += pointsAward;
+                    log_goal(scoringTeam, pointsAward, state.scores[scoringTeam]);  // STATS: registrar gol
                     std::stringstream ss; ss<<"SCORE Team "<<scoringTeam<<" scored "<<pointsAward<<" pts. Tot="<<state.scores[scoringTeam];
                     broadcast(ss.str());
+                    // Incrementar velocidad levemente por cada gol (3%)
+                    goalSpeedMultiplier *= 1.03f;
                     // reset ball to the left
                     reset_ball(-1);
                 }
@@ -586,13 +859,16 @@ void run_server() {
                         // announce winner (Red for team 0, Blue for team 1)
                         std::string winner = (t==0) ? "Red" : "Blue";
                         broadcast(std::string("STATE END ") + winner + " Win!");
+                        log_match_end(t, state.scores[0], state.scores[1]);  // STATS: registrar fin de partido
                         state.running = false;
+                        // Reiniciar multiplicador de velocidad para el nuevo partido
+                        goalSpeedMultiplier = 1.0f;
                         // send countdown TIMER messages for 5 seconds before next match
                         int waitSec = 5;
                         for (int s = waitSec; s >= 0; --s) {
                                 if (s == 0) {
-                                // At zero: set red team to start at -1 (user request) and others to 0, and reset ball
-                                for (int k=0;k<maxTeams;k++) state.scores[k] = (k==0) ? -1 : 0;
+                                // At zero: reset scores to 0 for both teams and reset ball
+                                for (int k=0;k<maxTeams;k++) state.scores[k] = 0;
                                 reset_ball((rand()%2)?1:-1);
                                 std::stringstream ts; ts<<"TIMER "<<s;
                                 broadcast(ts.str());
@@ -623,6 +899,7 @@ void run_server() {
                         // start next match automatically
                         state.running = true;
                         broadcast(std::string("STATE START"));
+                        log_match_start();  // STATS: registrar inicio de nuevo partido
                         break;
                     }
                 }
@@ -676,6 +953,7 @@ void run_server() {
         clients.clear();
     }
     close(listen_sock);
+    close_stats_logs();  // STATS: cerrar archivos de log
     std::cout << "Server shutdown complete.\n";
 }
 
@@ -692,6 +970,9 @@ struct RemoteState {
     std::mutex m;
     std::string lastMessage;
     std::chrono::steady_clock::time_point messageTime;
+    std::string criticalMessage; // Mensaje crítico que cubre toda la pantalla
+    std::chrono::steady_clock::time_point criticalMessageTime;
+    bool isPausedMessage = false; // true si es mensaje de "Partida pausada" (puede desaparecer)
     int nextMatchSeconds = 0;
     SDL_Color winColor{255,255,255,255};
     bool running=false;
@@ -799,6 +1080,22 @@ void client_recv_loop(int sock) {
                             std::lock_guard<std::mutex> lk(rstate.m);
                             if (teamnum >= 0) rstate.myTeam = teamnum;
                             rstate.lastMessage = line;
+                        } else if (line.find("Host desconectado") != std::string::npos || 
+                                   line.find("Partida pausada") != std::string::npos ||
+                                   line.find("partida interrumpida") != std::string::npos) {
+                            // Mensaje crítico - mostrar en pantalla completa
+                            // Remover "INFO " del mensaje
+                            std::string msg = line;
+                            if (msg.rfind("INFO ", 0) == 0) {
+                                msg = msg.substr(5); // Remover "INFO "
+                            }
+                            
+                            std::lock_guard<std::mutex> lk(rstate.m);
+                            rstate.criticalMessage = msg;
+                            rstate.criticalMessageTime = std::chrono::steady_clock::now();
+                            // Marcar si es mensaje de "Partida pausada" (puede desaparecer)
+                            rstate.isPausedMessage = (msg.find("Partida pausada") != std::string::npos);
+                            rstate.lastMessage.clear(); // Limpiar mensaje normal
                         } else {
                             std::lock_guard<std::mutex> lk(rstate.m); rstate.lastMessage = line;
                         }
@@ -807,6 +1104,13 @@ void client_recv_loop(int sock) {
                         std::istringstream ts(line);
                         std::string tag; int secs=0; ts>>tag>>secs;
                         rstate.nextMatchSeconds = secs;
+                    } else if (line.rfind("CLEAR_CRITICAL",0)==0) {
+                        // Limpiar mensaje crítico SOLO si es de "Partida pausada"
+                        std::lock_guard<std::mutex> lk(rstate.m);
+                        if (rstate.isPausedMessage) {
+                            rstate.criticalMessage.clear();
+                            rstate.isPausedMessage = false;
+                        }
                     } else if (line.rfind("STATE START",0)==0) {
                         rstate.running = true;
                     } else if (line.rfind("STATE END",0)==0) {
@@ -1011,10 +1315,40 @@ int run_client(const char *server_ip, int preferredTeam = -1) {
 
         // show which team this client controls (if known)
         int myTeamLocal = -1;
+        std::string criticalMsg;
+        bool isPaused = false;
         {
             std::lock_guard<std::mutex> lk(rstate.m);
             myTeamLocal = rstate.myTeam;
+            criticalMsg = rstate.criticalMessage;
+            isPaused = rstate.isPausedMessage;
         }
+        
+        // Mostrar mensaje crítico en pantalla completa (overlay oscuro)
+        // Los mensajes no pausados (Host desconectado) NUNCA desaparecen
+        // Los mensajes pausados (Partida pausada) desaparecen solo con CLEAR_CRITICAL
+        if (!criticalMsg.empty()) {
+            // Overlay oscuro semitransparente
+            SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);
+            SDL_SetRenderDrawColor(ren, 0, 0, 0, 200);
+            SDL_Rect overlay{0, 0, WIN_W, WIN_H};
+            SDL_RenderFillRect(ren, &overlay);
+            
+            if (font) {
+                // Mensaje principal grande
+                SDL_Color textColor{255, 50, 50, 255}; // Rojo brillante
+                SDL_Surface *surf = TTF_RenderUTF8_Blended(font, criticalMsg.c_str(), textColor);
+                if (surf) {
+                    SDL_Texture *tex = SDL_CreateTextureFromSurface(ren, surf);
+                    int tw=0, th=0; SDL_QueryTexture(tex, NULL, NULL, &tw, &th);
+                    SDL_Rect dst{ (WIN_W - tw)/2, (WIN_H - th)/2, tw, th };
+                    SDL_RenderCopy(ren, tex, NULL, &dst);
+                    SDL_DestroyTexture(tex);
+                    SDL_FreeSurface(surf);
+                }
+            }
+        }
+        
         if (myTeamLocal >= 0) {
             std::string you = (myTeamLocal==0) ? "Eres: Rojo" : "Eres: Azul";
             if (font) {

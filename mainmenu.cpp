@@ -198,7 +198,8 @@ void mostrar_menu_perfil(const string& perfil_nombre) {
         "Calcular F(x) = x^2+2x+8",        // 5
         "Conteo sobre texto",       // 6
         "Crea indice invertido",    // 7
-        "Crea indice invertido paralelo"  // 8
+        "Crea indice invertido paralelo",  // 8
+        "Benchmark: Analisis de rendimiento threads"  // 9
     };
 
     auto it = find_if(perfiles.begin(), perfiles.end(), [&](const Perfil& p) {
@@ -599,6 +600,52 @@ void ui_crear_indice_invertido_paralelo() {
     }
 }
 
+void ui_benchmark_threads() {
+    limpiar_pantalla();
+    cout << "\n=== BENCHMARK: Análisis de Rendimiento de Threads ===\n\n";
+    
+    cout << "Nombre del archivo de salida .idx: ";
+    string nombreArchivo;
+    getline(cin, nombreArchivo);
+    if (nombreArchivo.empty()) {
+        cout << "Nombre de archivo vacío. Operación cancelada.\n";
+        return;
+    }
+    
+    cout << "Path de la carpeta con libros: ";
+    string pathCarpeta;
+    getline(cin, pathCarpeta);
+    if (pathCarpeta.empty()) {
+        cout << "Path de carpeta vacío. Operación cancelada.\n";
+        return;
+    }
+    
+    if (std::filesystem::exists(path_idx + nombreArchivo)) {
+        cout << "\n⚠️  Ya existe un archivo con este nombre en IDX.\n";
+        cout << "    Se sobrescribirá en cada ejecución del benchmark.\n";
+    }
+    
+    cout << "\n¿Desea iniciar el benchmark? (1: Sí, 2: No): ";
+    int confirmar;
+    while (!(cin >> confirmar) || (confirmar != 1 && confirmar != 2)) {
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "Opción inválida. Ingrese 1 para Sí o 2 para No: ";
+    }
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    
+    if (confirmar == 1) {
+        cout << "\n";
+        // Ejecutar benchmark_threads directamente con system para mantener interactividad
+        string cmd = "./benchmark_threads \"" + nombreArchivo + "\" \"" + pathCarpeta + "\"";
+        system(cmd.c_str());
+        cout << "\nPresione ENTER para continuar...";
+        cin.get();
+    } else {
+        cout << "Benchmark cancelado.\n";
+    }
+}
+
 
 int main(int argc, char* argv[]) {
     cargar_env();
@@ -657,6 +704,9 @@ int main(int argc, char* argv[]) {
                 break;
             case 8:
                 ui_crear_indice_invertido_paralelo();
+                break;
+            case 9:
+                ui_benchmark_threads();
                 break;
             default:
                 cout << "Opción no implementada.\n"; break;

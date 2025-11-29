@@ -100,6 +100,7 @@ string timestamp_now_filename() {
 int main(int argc, char *argv[]) {
     if (argc != 5) {
         cerr << "Uso: " << argv[0] << " <salida.idx> <path-carpeta-libros> <N_THREADS> <N_LOTE>\n";
+        cerr << "      Nota: Si N_LOTE=0, se calculará automáticamente como total_libros/N_THREADS\n";
         return 1;
     }
 
@@ -108,8 +109,13 @@ int main(int argc, char *argv[]) {
     int N_THREADS = stoi(argv[3]);
     int N_LOTE = stoi(argv[4]);
 
-    if (N_THREADS <= 0 || N_LOTE <= 0) {
-        cerr << "N_THREADS y N_LOTE deben ser > 0\n";
+    if (N_THREADS <= 0) {
+        cerr << "N_THREADS debe ser > 0\n";
+        return 1;
+    }
+
+    if (N_LOTE < 0) {
+        cerr << "N_LOTE debe ser >= 0 (0 = automático)\n";
         return 1;
     }
 
@@ -138,6 +144,20 @@ int main(int argc, char *argv[]) {
         if (entry.is_regular_file()) {
             archivos.emplace_back(entry.path().string(), entry.path().filename().string());
         }
+    }
+
+    // Si N_LOTE es 0, calcularlo automáticamente de forma equitativa
+    if (N_LOTE == 0) {
+        size_t total_libros = archivos.size();
+        if (total_libros == 0) {
+            cerr << "Error: No se encontraron archivos en la carpeta especificada.\n";
+            return 1;
+        }
+        // N_LOTE = ceil(total_libros / N_THREADS) para distribución equitativa
+        N_LOTE = (total_libros + N_THREADS - 1) / N_THREADS;
+        cout << "N_LOTE calculado automáticamente: " << N_LOTE 
+             << " (total libros: " << total_libros 
+             << ", threads: " << N_THREADS << ")\n";
     }
 
     // Crear MAPA-LIBROS (id;nombre) en mapa_libros.txt
@@ -193,22 +213,35 @@ int main(int argc, char *argv[]) {
                 string t_ini = timestamp_now_iso();
                 int palabrasTot = 0;
 
+                // ÍNDICE LOCAL para este libro (sin mutex)
+                map<string, map<string, int>> indiceLocal;
+
                 ifstream infile(ruta);
                 if (infile.is_open()) {
                     string linea;
                     while (getline(infile, linea)) {
                         vector<string> toks = tokenize(linea);
                         palabrasTot += (int)toks.size();
-                        // Actualizar indice global con mutex
-                        lock_guard<mutex> lg(indiceMutex);
+                        // Construir índice LOCAL (SIN MUTEX - rápido)
                         for (const string &tok : toks) {
-                            indiceInvertido[tok][idLibro]++;
+                            indiceLocal[tok][idLibro]++;
                         }
                     }
                     infile.close();
                 } else {
                     // archivo no pudo abrirse: registrar con 0 palabras
                 }
+
+                // MERGE: Una sola vez al final (con mutex)
+                {
+                    lock_guard<mutex> lg(indiceMutex);
+                    for (const auto &[palabra, docs] : indiceLocal) {
+                        for (const auto &[docId, count] : docs) {
+                            indiceInvertido[palabra][docId] += count;
+                        }
+                    }
+                }
+
                 string t_fin = timestamp_now_iso();
 
                 // Registrar log (thread id, id libro, cantidad palabras, t_ini, t_fin)
