@@ -12,6 +12,48 @@
 using namespace std;
 namespace fs = std::filesystem;
 
+string py_script;
+
+string trim(const string& s) {
+    size_t start = s.find_first_not_of(" \t\r\n");
+    size_t end = s.find_last_not_of(" \t\r\n");
+    return (start == string::npos) ? "" : s.substr(start, end - start + 1);
+}
+
+void cargar_env() {     //carga el archivo .env
+    ifstream env(".env");
+    if (!env.is_open()) {
+        cout << "ERROR: No se encontró el archivo .env.\n";
+        exit(1);
+    }
+
+    string linea;
+    while (getline(env, linea)) {
+        // eliminar comentarios y trim
+        auto posc = linea.find('#');
+        if (posc != string::npos) linea = linea.substr(0, posc);
+        linea = trim(linea);
+        if (linea.empty()) continue;
+
+        auto eq = linea.find('=');
+        if (eq == string::npos) continue;
+
+        string key = trim(linea.substr(0, eq));
+        string val = trim(linea.substr(eq + 1));
+
+        // quitar comillas si las hay
+        if (val.size() >= 2 &&
+            ((val.front() == '"' && val.back() == '"') ||
+             (val.front() == '\'' && val.back() == '\'')))
+        {
+            val = val.substr(1, val.size() - 2);
+        }
+
+        if (key == "PY_SCRIPT") py_script = val;
+    }
+    env.close();
+}
+
 string timestamp_now() {
     using namespace chrono;
     auto now = system_clock::now();
@@ -23,6 +65,7 @@ string timestamp_now() {
 }
 
 int main(int argc, char* argv[]) {
+    cargar_env();
     if (argc != 3) {
         cerr << "Uso: " << argv[0] << " <salida.idx> <path-carpeta-libros>\n";
         cerr << "Este programa ejecutará createindexparalelo con diferentes cantidades de threads.\n";
@@ -198,7 +241,9 @@ int main(int argc, char* argv[]) {
     cout << "Generando gráfico de rendimiento...\n";
 
     // Llamar al script de Python para generar el gráfico
-    string pythonCmd = "python3 generar_grafico_threads.py \"" + logFile + "\"";
+    string pythonCmd = "python3 ";
+    pythonCmd += py_script;
+    pythonCmd += " \"" + logFile + "\"";
     int py_result = system(pythonCmd.c_str());
 
     if (py_result == 0) {

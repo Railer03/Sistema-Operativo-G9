@@ -36,6 +36,11 @@ string mutli_m;
 string create_index;
 string create_index_paralelo;
 string path_idx;
+string game_path; // Añadir esta variable global al inicio del archivo junto con las otras
+string buscador_app; 
+string cache_app;    
+string motor_app;
+string benchmark_app; // Añadir variable para el benchmark
 
 // Función para limpiar la pantalla
 void limpiar_pantalla() {
@@ -102,7 +107,7 @@ void cargar_env() {     //carga el archivo .env
         else if (key == "ADMIN_SYS") admin_sys = val;
         else if (key == "MUTLI_M") mutli_m = val;
         else if (key == "CREATE_INDEX") create_index = val;
-        else if (key == "INDICE-INVET-PARALELO") create_index_paralelo = val;
+        else if (key == "INDICE_INVET_PARALELO") create_index_paralelo = val;
         else if (key == "PATH_IDX") path_idx = val;
         else if (key == "GAME_SPEED") {
             // export to environment so child processes inherit it
@@ -110,11 +115,12 @@ void cargar_env() {     //carga el archivo .env
         } else if (key == "GAME_ACCELERATION") {
             setenv("GAME_ACCELERATION", val.c_str(), 1);
         } else if (key == "GAME") {
-            // store GAME as admin_sys fall-back or for other uses
-            // sanitize whitespace
-            // Note: keep original behavior minimal; just set admin_sys if not present
-            if (admin_sys.empty()) admin_sys = val;
+            game_path = val; // Guardar directamente en game_path en lugar de admin_sys
         }
+        else if (key == "BUSCADOR") buscador_app = val;
+        else if (key == "CACHE_APP") cache_app = val;
+        else if (key == "MOTOR_APP") motor_app = val;
+        else if (key == "BENCHMARK") benchmark_app = val;
     }
     env.close();
 }
@@ -199,7 +205,8 @@ void mostrar_menu_perfil(const string& perfil_nombre) {
         "Conteo sobre texto",       // 6
         "Crea indice invertido",    // 7
         "Crea indice invertido paralelo",  // 8
-        "Benchmark: Analisis de rendimiento threads"  // 9
+        "Lanzar Buscador",        // 9
+        "Benchmark Threads"       // 10
     };
 
     auto it = find_if(perfiles.begin(), perfiles.end(), [&](const Perfil& p) {
@@ -295,9 +302,9 @@ bool es_palindromo(const string &s) {   //funcion para checkear si un string es 
 }
 
 void ui_palindromo() {
+    limpiar_pantalla();
     while (true) {
-        limpiar_pantalla();
-        cout << "\n--- PALINDROMO ---\n1) Validar (ingresar texto)\n2) Cancelar\nElija una opción: ";
+        cout << "\n--- PALINDROMO ---\n1) Continuar\n2) Cancelar\nElija una opción: ";
         int o;
         if (!(cin >> o)) { cin.clear(); cin.ignore(numeric_limits<streamsize>::max(),'\n'); continue; }
         cin.ignore(numeric_limits<streamsize>::max(),'\n');
@@ -440,7 +447,13 @@ void ui_multiplicador_matrices() {
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
             if (confirmar == 1) {
-                ejecutar_comando(mutli_m, {pathA, pathB});
+                if (mutli_m.empty()) {
+                    cout << "No está configurado el ejecutable MUTLI_M en .env (MUTLI_M)\n";
+                } else {
+                    vector<string> args = { to_string(n), pathA, pathB };
+                    int rc = ejecutar_comando(mutli_m, args);
+                    cout << "Presione ENTER para continuar..."; cin.get();
+                }
             } else {
                 cout << "Ejecución cancelada.\n";
             }
@@ -592,7 +605,9 @@ void ui_crear_indice_invertido_paralelo() {
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
             if (confirmar == 1) {
-                ejecutar_comando(create_index_paralelo, { nombreArchivo, pathCarpeta, to_string(N_THREADS), to_string(N_LOTE) });
+                string exe = create_index_paralelo.empty() ? "./paralelo" : create_index_paralelo;
+                vector<string> args = { nombreArchivo, pathCarpeta, to_string(N_THREADS), to_string(N_LOTE) };
+                ejecutar_comando(exe, args);
             } else {
                 cout << "Ejecución cancelada.\n";
             }
@@ -636,9 +651,9 @@ void ui_benchmark_threads() {
     
     if (confirmar == 1) {
         cout << "\n";
-        // Ejecutar benchmark_threads directamente con system para mantener interactividad
-        string cmd = "./benchmark_threads \"" + nombreArchivo + "\" \"" + pathCarpeta + "\"";
-        system(cmd.c_str());
+        string exe = benchmark_app.empty() ? "./benchmark_threads" : benchmark_app;
+        vector<string> args = { nombreArchivo, pathCarpeta };
+        ejecutar_comando(exe, args);
         cout << "\nPresione ENTER para continuar...";
         cin.get();
     } else {
@@ -646,6 +661,31 @@ void ui_benchmark_threads() {
     }
 }
 
+void ui_lanzar_buscador() {
+    // validar existencia ruta idx (path_idx) y pedir nombre de archivo .idx
+    limpiar_pantalla();
+    cout << "\n--- BUSCADOR SistOpe (Interfaz) ---\n";
+    cout << "Ingrese nombre del archivo índice (.idx) ubicado en PATH_IDX (ej: libros.idx): ";
+    string idxname; getline(cin, idxname);
+    idxname = trim(idxname); // quitar espacios
+    if (idxname.size() < 4 || idxname.substr(idxname.size()-4) != ".idx") {
+        cout << "Nombre inválido. Debe terminar en .idx\n";
+        sleep(2); return;
+    }
+    // construir path de forma consistente -> ambas ramas son std::filesystem::path
+    std::filesystem::path base = path_idx.empty() ? std::filesystem::path(".") : std::filesystem::path(path_idx);
+    std::filesystem::path idxFull = base / idxname;
+    if (!std::filesystem::exists(idxFull)) {
+        cout << "No existe el archivo índice: " << idxFull << "\n";
+        sleep(2); return;
+    }
+    // ejecutar buscador (le pasamos el PATH_IDX y el nombre del índice)
+    if (buscador_app.empty()) {
+        cout << "No está configurado el ejecutable BUSCADOR en .env (BUSCADOR)\n";
+        sleep(2); return;
+    }
+    ejecutar_comando(buscador_app, { idxFull.string() });
+}
 
 int main(int argc, char* argv[]) {
     cargar_env();
@@ -655,7 +695,7 @@ int main(int argc, char* argv[]) {
     cargar_perfiles(perfil_file);
     cout << "PID proceso principal: " << getpid() << '\n' << endl;
     while (true) {
-        limpiar_pantalla();
+        //limpiar_pantalla();
         mostrar_menu_perfil(atrivute);
         int op;
         cin >> op; cin.ignore();
@@ -683,14 +723,16 @@ int main(int argc, char* argv[]) {
                 break;
             case 2:
                 ui_multiplicador_matrices();
+                limpiar_pantalla();
                 break;
             case 3:
-                // Abrir el juego usando la variable de entorno GAME
-                cargar_aplicacion("./juego/pong");
+                // Usar game_path en lugar de admin_sys
+                cargar_aplicacion(game_path);
                 limpiar_pantalla();
                 break;
             case 4:
                 ui_palindromo();
+                limpiar_pantalla();
                 break;
             case 5:
                 fx();
@@ -698,16 +740,25 @@ int main(int argc, char* argv[]) {
                 break;
             case 6:
                 conteo_sobre_texto();
+                limpiar_pantalla();
                 break;
             case 7:
                 ui_crear_indice_invertido();
+                limpiar_pantalla();
                 break;
             case 8:
                 ui_crear_indice_invertido_paralelo();
+                limpiar_pantalla();
                 break;
             case 9:
-                ui_benchmark_threads();
+                ui_lanzar_buscador();
+                limpiar_pantalla();
                 break;
+            case 10:
+                ui_benchmark_threads();
+                limpiar_pantalla();
+                break;
+            
             default:
                 cout << "Opción no implementada.\n"; break;
         }

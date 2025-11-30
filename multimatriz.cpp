@@ -82,15 +82,33 @@ void imprimirMatriz(const vector<vector<int>>& M) {
 }
 
 int main(int argc, char* argv[]) {
-    if (argc != 3) {
-        cout << "Uso: " << argv[0] << " <archivo_matriz_A> <archivo_matriz_B>" << endl;
+    if (argc != 3 && argc != 4) {
+        cout << "Uso:\n  " << argv[0] << " <archivo_matriz_A> <archivo_matriz_B>\n  " << argv[0] << " <N> <archivo_matriz_A> <archivo_matriz_B>\n";
         return 1;
     }
-    matriza = argv[1];
-    matrizb = argv[2];
+    int expected_n = 0;
+    int idxA = 1, idxB = 2;
+    if (argc == 4) {
+        try {
+            expected_n = stoi(argv[1]);
+        } catch (...) {
+            cout << "ERROR: Primer argumento no es un entero válido para N.\n";
+            return 1;
+        }
+        idxA = 2; idxB = 3;
+    }
+    matriza = argv[idxA];
+    matrizb = argv[idxB];
     int nA, nB;
     vector<vector<int>> A = leerMatrizDesdeArchivo(matriza, nA);
     vector<vector<int>> B = leerMatrizDesdeArchivo(matrizb, nB);
+    if (expected_n > 0) {
+        if (nA != expected_n || nB != expected_n) {
+            cout << "ERROR: Las matrices no coinciden con N=" << expected_n << " ("
+                 << nA << " vs " << nB << ").\n";
+            return 1;
+        }
+    }
     if (nA != nB) {
         cout << "ERROR: Las matrices no tienen el mismo tamaño ("
              << nA << "x" << nA << " vs " << nB << "x" << nB << ").\n";

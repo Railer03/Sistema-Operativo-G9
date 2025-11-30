@@ -12,6 +12,7 @@
 #include <sstream>
 #include <iomanip>
 #include <queue>
+#include  <chrono>
 
 using namespace std;
 namespace fs = std::filesystem;
@@ -136,7 +137,7 @@ int main(int argc, char *argv[]) {
     fs::create_directories(logsDir, ec);
 
     // El mapa de libros se guarda siempre con nombre fijo "mapa_libros.txt" dentro de PATH_IDX (o .)
-    fs::path mapaLibrosPath = "mapa_libros.txt";
+    fs::path mapaLibrosPath = env_idx_dir + "mapa_libros.txt";
 
     // Recolectar archivos y asignar ids numéricos
     vector<pair<string,string>> archivos; // (ruta, nombre)
@@ -186,6 +187,9 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     cout << "Log de proceso: " << logFilename << "\n";
+
+    auto t_start_processing = chrono::high_resolution_clock::now();
+
 
     // Procesamiento por lotes
     for (size_t start = 0; start < archivosConId.size(); start += N_LOTE) {
@@ -280,5 +284,16 @@ int main(int argc, char *argv[]) {
     }
 
     cout << "Índice invertido creado exitosamente en " << idxPath.string() << ".\n";
+
+    auto t_end_processing = chrono::high_resolution_clock::now();
+    auto duration_processing_ms = chrono::duration_cast<chrono::milliseconds>(t_end_processing - t_start_processing).count();
+
+    cout << "\n========================================\n";
+    cout << "  Tiempo del Índice Invertido (procesamiento)\n";
+    cout << "========================================\n";
+    cout << "Tiempo de procesamiento: " << duration_processing_ms << " ms ("
+        << (duration_processing_ms / 1000.0) << " segundos)\n";
+    cout << "========================================\n\n";
+
     return 0;
 }
