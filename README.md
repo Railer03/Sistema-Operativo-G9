@@ -1,6 +1,6 @@
 # Sistema operativo por grupo 9
 
-### 1) Propósito de la aplicación
+## 1) Propósito de la aplicación
 
 El proyecto en C++ consiste en la construcción de un sistema, cuyo objetivo es gestionar la interacción con distintos perfiles de usuario y ofrecer un conjunto de funcionalidades accesibles desde un menú en consola.
 
@@ -18,13 +18,22 @@ El proyecto permite:
    - Buscador de palabras especificas en archivos de texto y salir del sistema.
   
 
-### 2) Cómo ejecutar el programa
+## 2) Cómo ejecutar el programa
 
+Antes de poder correr el programa, se requiere instlar la libreria SDL2, esto abriendo una terminal, e ingresando los siguientes comandos en el orden que se presentan:
+   ```
+   sudo apt update
+   ```
+   ```
+   sudo apt install libsdl2-dev libsdl2-ttf-dev libsdl2-image-dev libsdl2-mixer-dev
+   ```
+
+### Descargando el projecto:
 - Descargar/Clonar el repositorio usando el siguiente comando en una terminal:
    ```
    git clone https://github.com/Railer03/Sistema-Operativo-G9.git
    ```
-- Abrir una consola dentro de la carpeta principal del proyecto
+- Abrir una terminal dentro de la carpeta principal del proyecto
   
 - Ejecutar el comando
   ```
@@ -44,7 +53,7 @@ El proyecto permite:
    ./matriz
    ```
 
-### 3) Descripción de las variables de entorno
+## 3) Descripción de las variables de entorno
 
 En el archivo .env se guardan las siguientes variables:
 
@@ -60,12 +69,12 @@ En el archivo .env se guardan las siguientes variables:
 - LOG_FILE: carpeta donde se guardan los logs
 - INDICE-INVET-PARALELO: ejecutable para crear el índice invertido paralelo
 
-### 4) Paralelización en createindexparalelo
+## 4) Paralelización en createindexparalelo
 
 La paralelización en createindexparalelo se realiza utilizando hilos (threads) en C++. El proceso divide el trabajo de indexar los libros en lotes, y cada hilo procesa un lote de archivos en paralelo. Esto permite aprovechar los núcleos del procesador y acelerar la creación del índice invertido, especialmente cuando hay muchos archivos de texto en la carpeta de libros. El usuario puede configurar el número de hilos (N_THREADS) y el tamaño de cada lote (N_LOTE) al ejecutar la opción correspondiente en el menú.
 
 
-### 5) Juego Pong
+## 5) Juego Pong
 
 El juego pong se ejecuta desde el menú principal (opción 3).
 
